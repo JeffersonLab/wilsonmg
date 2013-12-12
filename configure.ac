@@ -1,6 +1,7 @@
 AC_INIT(wilsonmg,1.0.0, sdcohen@uw.edu)
 AC_PREREQ([2.57])
 AC_CONFIG_AUX_DIR(./config)
+AC_CONFIG_HEADERS([include/wilsonmg_config_internal.h])
 AC_CANONICAL_HOST
 AM_INIT_AUTOMAKE
 
