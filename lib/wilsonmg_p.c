@@ -221,7 +221,7 @@ int MGP(solve)( void peekpokesrc(QLA(DiracFermion) *dest, int coords[]),
   
   // Load the QOP structures with the appropriate parameters
   inv.max_iter = PC(g_param).maxiter;
-  res.rsqmin = PC(g_param).res;
+  res.rsqmin = PC(g_param).res*PC(g_param).res;
   
   printf0("QDP: Apply the multigrid inverter!\n");
   timer = -QDP_time(); // Start timing inversion
@@ -232,6 +232,8 @@ int MGP(solve)( void peekpokesrc(QLA(DiracFermion) *dest, int coords[]),
   QOP_D3_wilsonMgSolve(&info, wilmg, wil, &inv, &res, PC(g_param).kappa, out, in);
   #endif
   timer += QDP_time(); QMP_max_double(&timer); // End timing inversion
+  its += res.final_iter;
+
   printf0("QDP: Inversion took %i iterations and %g secs\n", its, timer);
   
   printf0("QDP: Copying fermion solution back to Chroma\n");
