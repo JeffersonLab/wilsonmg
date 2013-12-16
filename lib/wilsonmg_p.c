@@ -112,7 +112,10 @@ void MGP(initialize)( int *machsize, int *latsize,
   printf0("QDP:   Average spatial plaquette = %g\n", splaq);
   printf0("QDP:   Average temporal plaquette = %g\n", tplaq);
 
-  // Set the boundary conditions
+  // Set the boundary conditions -- All periodic -- Chroma 
+  // sets boundaries now through ferm-state. Non gauge link bcs are 
+  // not really allowed.
+#if 0
   for (int d=0; d<ndim; d++) {
     if (PC(g_param).bc[d]!=1) {
       bcdir = d;
@@ -120,6 +123,8 @@ void MGP(initialize)( int *machsize, int *latsize,
       QDP_M_eq_func(gauge[d], change_bc, QDP_all);
     }
   }
+#endif 
+
   timer += QDP_time(); QMP_max_double(&timer);
   printf0("QDP: load gauge field time = %g secs\n", timer);
   
