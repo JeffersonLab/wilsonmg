@@ -129,7 +129,8 @@ void MGP(initialize)( int *machsize, int *latsize,
   QOP_wilson_coeffs_t coeffs;
   coeffs.clov_s = PC(g_param).clov_s/PC(g_param).aniso_xi;
   coeffs.clov_t = PC(g_param).clov_t;
-  coeffs.aniso = PC(g_param).aniso_xi/PC(g_param).aniso_nu;
+  // Flip it.
+  coeffs.aniso = PC(g_param).aniso_nu/PC(g_param).aniso_xi;
 
   timer = -QDP_time();
   printf0("QDP: Creating Wilson-clover Dirac operator\n");
@@ -148,7 +149,14 @@ void MGP(initialize)( int *machsize, int *latsize,
 #endif
   timer += QDP_time(); QMP_max_double(&timer);
   printf0("QDP: Dirac-op creation time = %g secs\n", timer);
-  
+ 
+
+
+
+
+
+
+ 
   printf0("QDP: Creating multigrid structure\n");
   timer = -QDP_time();
   wilmg = QOP_wilsonMgNew();
@@ -191,12 +199,13 @@ void MGP(initialize)( int *machsize, int *latsize,
     QOP_wilsonMgSet(wilmg, l, "itmax", PC(g_param).cmaxiter[l]);
     QOP_wilsonMgSet(wilmg, l, "ngcr", PC(g_param).cngcr[l]);
   }
-  
+
+  // Testing. Dont set up the MG 
   printf0("QDP:   Solving null vectors for multigrid\n");
   QOP_wilsonMgSetup(wilmg);
   timer += QDP_time(); QMP_max_double(&timer);
   printf0("QDP: multigrid structure setup time = %g secs\n", timer);
-  
+ 
 }
 
 // -----------------------------------------------------------------
@@ -218,7 +227,8 @@ int MGP(solve)( void peekpokesrc(QLA(DiracFermion) *dest, int coords[]),
   printf0("QDP:   Chroma in norm2 = %g\n", bsq);
   timer += QDP_time(); QMP_max_double(&timer); // End timing source transfer
   printf0("QDP: Source transfer took %g secs\n", timer);
-  
+ 
+#if 1 
   // Load the QOP structures with the appropriate parameters
   inv.max_iter = PC(g_param).maxiter;
   res.rsqmin = PC(g_param).res*PC(g_param).res;
@@ -231,11 +241,17 @@ int MGP(solve)( void peekpokesrc(QLA(DiracFermion) *dest, int coords[]),
   #else
   QOP_D3_wilsonMgSolve(&info, wilmg, wil, &inv, &res, PC(g_param).kappa, out, in);
   #endif
+
   timer += QDP_time(); QMP_max_double(&timer); // End timing inversion
   its += res.final_iter;
 
   printf0("QDP: Inversion took %i iterations and %g secs\n", its, timer);
-  
+#else 
+  printf0("Testing QDP Dirac operator\n");
+  QOP_D3_wilson_dslash_qdp(&info, wil, PC(g_param).kappa, +1, out, in, QOP_EVENODD, QOP_EVENODD); 
+
+#endif
+
   printf0("QDP: Copying fermion solution back to Chroma\n");
   timer = -QDP_time(); // Start timing source transfer
   QDP_r_eq_norm2_D(&bsq, out, QDP_all);
