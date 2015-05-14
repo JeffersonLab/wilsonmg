@@ -18,7 +18,7 @@
 // The Dirac operator, multigrid structure and QOP structures are global
 static QOP(FermionLinksWilson) *wil = NULL;
 static QOP_F3_FermionLinksWilson *wilf = NULL;
-static QOP_WilsonMg *wilmg = NULL;
+			       //static QOP_WilsonMg *wilmg = NULL;
 static QOP_info_t info = {0,0,QOP_SUCCESS,0,0};
 static QOP_invert_arg_t inv = {40,40,1,QOP_EVENODD};
 static QOP_resid_arg_t res = {1e-12,0,0,0,0,0};
@@ -30,6 +30,121 @@ global_average(double x)
 {
   QMP_sum_double(&x);
   return x/QMP_get_number_of_nodes();
+}
+
+void* MGP(create_subspace)(int *latsize)
+{
+  QOP_WilsonMg* ret_val = NULL;
+  double timer=0;
+  int ndim=4;
+  printf0("QDP: Creating multigrid structure\n");
+  timer = QDP_time();
+  ret_val = QOP_wilsonMgNew();
+  QOP_wilsonMgSetLinks(ret_val, wilf);
+  // Set meta-global parameter
+  // Set global multigrid parameters
+  QOP_wilsonMgSet(ret_val, -1, "nlevels", PC(g_param).levels);
+  QOP_wilsonMgSet(ret_val, -2, "verbose", PC(g_param).verb);
+  QOP_wilsonMgSet(ret_val, -1, "profile", 1);
+  QOP_wilsonMgSet(ret_val, -1, "kappanv", PC(g_param).kappac);
+  QOP_wilsonMgSet(ret_val, -1, "kappa",   PC(g_param).kappac);
+  QOP_wilsonMgSet(ret_val, -1, "itmax",   PC(g_param).maxiter);
+  QOP_wilsonMgSet(ret_val, -1, "ngcr",    PC(g_param).ngcr);
+
+  for (int l=0; l<PC(g_param).levels; l++) {
+    printf0("QDP:   Creating %i%s multigrid level with size",l+1,
+              (l>2?"th":l>1?"rd":l>0?"nd":"st"));
+    // Set lth-level parameters
+    double *dlat = malloc(ndim*sizeof(double));
+    for (int d=0; d<ndim; d++) {
+      dlat[d] = latsize[d];
+      for (int ll=0; ll<=l; ll++) dlat[d] /= PC(g_param).block[ll][d];
+      printf0(" %g",dlat[d]);
+    }
+    printf0("\n");
+    QOP_wilsonMgSetArray(ret_val, l, "lattice", dlat, ndim);
+    QOP_wilsonMgSet(ret_val, l, "nvecs", PC(g_param).nNullVecs[l]);
+    // Set lth-level parameters (null-vector generation)
+    QOP_wilsonMgSet(ret_val, l, "setup_nvecs", PC(g_param).nNullVecs[l] + PC(g_param).nExtraVecs[l]);
+    QOP_wilsonMgSet(ret_val, l, "setup_res", PC(g_param).nullRes[l]);
+    QOP_wilsonMgSet(ret_val, l, "setup_maxit", PC(g_param).nullMaxIter[l]);
+    QOP_wilsonMgSet(ret_val, l, "setup_change_fac", PC(g_param).nullConv[l]);
+    // Set lth-level parameters (V-cycle)
+    QOP_wilsonMgSet(ret_val, l, "npre", PC(g_param).npre[l]);
+    QOP_wilsonMgSet(ret_val, l, "npost", PC(g_param).npost[l]);
+    QOP_wilsonMgSet(ret_val, l, "scale", PC(g_param).urelax[l]);
+    // Set lth-level parameters (solver)
+    QOP_wilsonMgSet(ret_val, l, "cres", PC(g_param).cres[l]);
+    QOP_wilsonMgSet(ret_val, l, "itmax", PC(g_param).cmaxiter[l]);
+    QOP_wilsonMgSet(ret_val, l, "ngcr", PC(g_param).cngcr[l]);
+  }
+
+  // Testing. Dont set up the MG 
+  printf0("QDP:   Solving null vectors for multigrid\n");
+  QOP_wilsonMgSetup(ret_val);
+  timer += QDP_time(); QMP_max_double(&timer);
+  printf0("QDP: multigrid structure setup time = %g secs\n", timer);
+  return (void *)ret_val;
+}
+
+void MGP(reset_subspace)(int *latsize, void *subspace_in)
+{
+  QOP_WilsonMg* ret_val = (QOP_WilsonMg*)(subspace_in);
+  double timer=0;
+  int ndim=4;
+  printf0("QDP: Resetting multigrid structure\n");
+  timer = QDP_time();
+  QOP_wilsonMgSetLinks(ret_val, wilf);
+  // Set meta-global parameter
+  // Set global multigrid parameters
+  QOP_wilsonMgSet(ret_val, -1, "nlevels", PC(g_param).levels);
+  QOP_wilsonMgSet(ret_val, -2, "verbose", PC(g_param).verb);
+  QOP_wilsonMgSet(ret_val, -1, "profile", 1);
+  QOP_wilsonMgSet(ret_val, -1, "kappanv", PC(g_param).kappac);
+  QOP_wilsonMgSet(ret_val, -1, "kappa",   PC(g_param).kappac);
+  QOP_wilsonMgSet(ret_val, -1, "itmax",   PC(g_param).maxiter);
+  QOP_wilsonMgSet(ret_val, -1, "ngcr",    PC(g_param).ngcr);
+
+  for (int l=0; l<PC(g_param).levels; l++) {
+    printf0("QDP:   Creating %i%s multigrid level with size",l+1,
+              (l>2?"th":l>1?"rd":l>0?"nd":"st"));
+    // Set lth-level parameters
+    double *dlat = malloc(ndim*sizeof(double));
+    for (int d=0; d<ndim; d++) {
+      dlat[d] = latsize[d];
+      for (int ll=0; ll<=l; ll++) dlat[d] /= PC(g_param).block[ll][d];
+      printf0(" %g",dlat[d]);
+    }
+    printf0("\n");
+    QOP_wilsonMgSetArray(ret_val, l, "lattice", dlat, ndim);
+    QOP_wilsonMgSet(ret_val, l, "nvecs", PC(g_param).nNullVecs[l]);
+    // Set lth-level parameters (null-vector generation)
+    QOP_wilsonMgSet(ret_val, l, "setup_nvecs", PC(g_param).nNullVecs[l] + PC(g_param).nExtraVecs[l]);
+    QOP_wilsonMgSet(ret_val, l, "setup_res", PC(g_param).nullRes[l]);
+    QOP_wilsonMgSet(ret_val, l, "setup_maxit", PC(g_param).nullMaxIter[l]);
+    QOP_wilsonMgSet(ret_val, l, "setup_change_fac", PC(g_param).nullConv[l]);
+    // Set lth-level parameters (V-cycle)
+    QOP_wilsonMgSet(ret_val, l, "npre", PC(g_param).npre[l]);
+    QOP_wilsonMgSet(ret_val, l, "npost", PC(g_param).npost[l]);
+    QOP_wilsonMgSet(ret_val, l, "scale", PC(g_param).urelax[l]);
+    // Set lth-level parameters (solver)
+    QOP_wilsonMgSet(ret_val, l, "cres", PC(g_param).cres[l]);
+    QOP_wilsonMgSet(ret_val, l, "itmax", PC(g_param).cmaxiter[l]);
+    QOP_wilsonMgSet(ret_val, l, "ngcr", PC(g_param).cngcr[l]);
+  }
+
+  timer += QDP_time(); QMP_max_double(&timer);
+  printf0("QDP: multigrid structure setup time = %g secs\n", timer);
+}
+
+void MGP(destroy_subspace)(void *subspace)
+{
+
+  QOP_WilsonMg *qop_wilsmg = (QOP_WilsonMg *)subspace;  
+  if (qop_wilsmg) {
+    printf0("**** Destroying subspae at %lx\n", subspace);
+    QOP_wilsonMgFree(qop_wilsmg);
+  }
 }
 
 // -----------------------------------------------------------------
@@ -156,68 +271,28 @@ void MGP(initialize)( int *machsize, int *latsize,
   printf0("QDP: Dirac-op creation time = %g secs\n", timer);
  
 
-
+  //  wilmg = create_subspace(latsize);
 
 
 
 
  
-  printf0("QDP: Creating multigrid structure\n");
-  timer = -QDP_time();
-  wilmg = QOP_wilsonMgNew();
-  QOP_wilsonMgSetLinks(wilmg, wilf);
-  // Set meta-global parameter
-  QOP_wilsonMgSet(wilmg, -2, "verbose", PC(g_param).verb-1);
-  // Set global multigrid parameters
-  QOP_wilsonMgSet(wilmg, -1, "nlevels", PC(g_param).levels);
-  QOP_wilsonMgSet(wilmg, -1, "verbose", PC(g_param).verb);
-  QOP_wilsonMgSet(wilmg, -1, "profile", 1);
-  QOP_wilsonMgSet(wilmg, -1, "kappanv", PC(g_param).kappac);
-  QOP_wilsonMgSet(wilmg, -1, "kappa",   PC(g_param).kappac);
-  QOP_wilsonMgSet(wilmg, -1, "itmax",   PC(g_param).maxiter);
-  QOP_wilsonMgSet(wilmg, -1, "ngcr",    PC(g_param).ngcr);
-
-  for (int l=0; l<PC(g_param).levels; l++) {
-    printf0("QDP:   Creating %i%s multigrid level with size",l+1,
-              (l>2?"th":l>1?"rd":l>0?"nd":"st"));
-    // Set lth-level parameters
-    double *dlat = malloc(ndim*sizeof(double));
-    for (int d=0; d<ndim; d++) {
-      dlat[d] = latsize[d];
-      for (int ll=0; ll<=l; ll++) dlat[d] /= PC(g_param).block[ll][d];
-      printf0(" %g",dlat[d]);
-    }
-    printf0("\n");
-    QOP_wilsonMgSetArray(wilmg, l, "lattice", dlat, ndim);
-    QOP_wilsonMgSet(wilmg, l, "nvecs", PC(g_param).nNullVecs[l]);
-    // Set lth-level parameters (null-vector generation)
-    QOP_wilsonMgSet(wilmg, l, "setup_nvecs", PC(g_param).nNullVecs[l] + PC(g_param).nExtraVecs[l]);
-    QOP_wilsonMgSet(wilmg, l, "setup_res", PC(g_param).nullRes[l]);
-    QOP_wilsonMgSet(wilmg, l, "setup_maxit", PC(g_param).nullMaxIter[l]);
-    QOP_wilsonMgSet(wilmg, l, "setup_change_fac", PC(g_param).nullConv[l]);
-    // Set lth-level parameters (V-cycle)
-    QOP_wilsonMgSet(wilmg, l, "npre", PC(g_param).npre[l]);
-    QOP_wilsonMgSet(wilmg, l, "npost", PC(g_param).npost[l]);
-    QOP_wilsonMgSet(wilmg, l, "scale", PC(g_param).urelax[l]);
-    // Set lth-level parameters (solver)
-    QOP_wilsonMgSet(wilmg, l, "cres", PC(g_param).cres[l]);
-    QOP_wilsonMgSet(wilmg, l, "itmax", PC(g_param).cmaxiter[l]);
-    QOP_wilsonMgSet(wilmg, l, "ngcr", PC(g_param).cngcr[l]);
-  }
-
-  // Testing. Dont set up the MG 
-  printf0("QDP:   Solving null vectors for multigrid\n");
-  QOP_wilsonMgSetup(wilmg);
-  timer += QDP_time(); QMP_max_double(&timer);
-  printf0("QDP: multigrid structure setup time = %g secs\n", timer);
  
 }
 
 // -----------------------------------------------------------------
 // Solve for a fermion source specified by the peekpoke function
 int MGP(solve)( void peekpokesrc(QLA(DiracFermion) *dest, int coords[]),
-                 void peekpokesol(QLA(DiracFermion) *src,  int coords[]) )
+		void peekpokesol(QLA(DiracFermion) *src,  int coords[]),
+		void *subspace_in)
 {
+  QOP_WilsonMg* subspace = (QOP_WilsonMg *)subspace_in;
+  if (subspace == NULL || subspace == 0x0 ) { 
+    printf0("ERROR: MGP(solve) called with NULL subspace\n");
+    return -1;
+  }
+  printf0("Using subspace with ptr: %lx\n", subspace);
+
   double timer;
   int its=0;
   QLA_Real bsq;
@@ -242,9 +317,9 @@ int MGP(solve)( void peekpokesrc(QLA(DiracFermion) *dest, int coords[]),
   timer = -QDP_time(); // Start timing inversion
   // Kludge: QOP_wilsonMgSolve does not seem to be properly registered for D/F
   #if QDP_Precision == 1 || QDP_Precision == 'F'
-  QOP_F3_wilsonMgSolve(&info, wilmg, wil, &inv, &res, PC(g_param).kappa, out, in);
+  QOP_F3_wilsonMgSolve(&info, subspace, wil, &inv, &res, PC(g_param).kappa, out, in);
   #else
-  QOP_D3_wilsonMgSolve(&info, wilmg, wil, &inv, &res, PC(g_param).kappa, out, in);
+  QOP_D3_wilsonMgSolve(&info, subspace, wil, &inv, &res, PC(g_param).kappa, out, in);
   #endif
 
   timer += QDP_time(); QMP_max_double(&timer); // End timing inversion
@@ -273,7 +348,7 @@ int MGP(solve)( void peekpokesrc(QLA(DiracFermion) *dest, int coords[]),
 // Close down the QDP environment
 void MGP(finalize)() {
   printf0("QDP: Finalizing\n");
-  if (wilmg) QOP_wilsonMgFree(wilmg);
+  //  if (wilmg) QOP_wilsonMgFree(wilmg);
   if (wil) QOP(wilson_destroy_L)(wil);
   if (wilf && wilf!=wil) QOP_F3_wilson_destroy_L(wilf);
   //QDP_finalize();

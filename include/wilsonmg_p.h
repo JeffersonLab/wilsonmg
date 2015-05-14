@@ -74,8 +74,15 @@ struct MGP(Clover_Params) PC(g_param);
  
 void MGP(initialize)( int *machsize, int *latsize,
                       void (*peekpoke[4])(QLA(ColorMatrix) *dest, int coords[]) );
+
+  void*  MGP(create_subspace)( int *latsize );
+  void MGP(reset_subspace)(int *latsize, void *subspace_in);
+  void MGP(destroy_subspace)( void *subspace  );
+
 int MGP(solve)( void peekpokesrc(QLA(DiracFermion) *dest, int coords[]),
-                void peekpokesol(QLA(DiracFermion) *src,  int coords[]) );
+                void peekpokesol(QLA(DiracFermion) *src,  int coords[]),
+		void *subspace );
+
 void MGP(finalize)();
 void MGP(teststuff)();
  
