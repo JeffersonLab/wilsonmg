@@ -70,7 +70,7 @@ struct MGP(Clover_Params) {
     QLA_Real cres[MAXLEVELS]; // Coarse-level relative stopping residual
   };
  
-struct MGP(Clover_Params) PC(g_param);
+
  
 void MGP(initialize)( int *machsize, int *latsize,
                       void (*peekpoke[4])(QLA(ColorMatrix) *dest, int coords[]) );

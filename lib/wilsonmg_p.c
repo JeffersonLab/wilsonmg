@@ -23,6 +23,7 @@ static QOP_info_t info = {0,0,QOP_SUCCESS,0,0};
 static QOP_invert_arg_t inv = {40,40,1,QOP_EVENODD};
 static QOP_resid_arg_t res = {1e-12,0,0,0,0,0};
 
+struct MGP(Clover_Params) PC(g_param);
 // -----------------------------------------------------------------
 // Takes a global average (only used for profiling)
 static double
