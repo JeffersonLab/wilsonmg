@@ -80,6 +80,7 @@ void MGP(initialize)( int *machsize, int *latsize,
   void MGP(destroy_subspace)( void *subspace  );
 
 int MGP(solve)( void peekpokesrc(QLA(DiracFermion) *dest, int coords[]),
+		void peekpokeguess(QLA(DiracFermion) *dest, int coords[]),
                 void peekpokesol(QLA(DiracFermion) *src,  int coords[]),
 		void *subspace );
 

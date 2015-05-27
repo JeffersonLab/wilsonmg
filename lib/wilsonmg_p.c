@@ -39,7 +39,7 @@ void* MGP(create_subspace)(int *latsize)
   double timer=0;
   int ndim=4;
   printf0("QDP: Creating multigrid structure\n");
-  timer = QDP_time();
+  timer = -QDP_time();
   ret_val = QOP_wilsonMgNew();
   QOP_wilsonMgSetLinks(ret_val, wilf);
   // Set meta-global parameter
@@ -284,6 +284,7 @@ void MGP(initialize)( int *machsize, int *latsize,
 // -----------------------------------------------------------------
 // Solve for a fermion source specified by the peekpoke function
 int MGP(solve)( void peekpokesrc(QLA(DiracFermion) *dest, int coords[]),
+		void peekpokeguess(QLA(DiracFermion) *dest, int coords[]),
 		void peekpokesol(QLA(DiracFermion) *src,  int coords[]),
 		void *subspace_in)
 {
@@ -302,7 +303,11 @@ int MGP(solve)( void peekpokesrc(QLA(DiracFermion) *dest, int coords[]),
   timer = -QDP_time(); // Start timing source transfer
   QDP_DiracFermion *in = QDP_create_D();
   QDP_DiracFermion *out = QDP_create_D();
-  QDP_D_eq_zero(out, QDP_all);
+  //  QDP_D_eq_zero(out, QDP_all);
+  QDP_D_eq_func(out,peekpokeguess, QDP_all);
+  QDP_r_eq_norm2_D(&bsq, out, QDP_all);
+  printf0("QDP:   Chroma initial guess norm2 = %g\n", bsq);
+  
   QDP_D_eq_func(in, peekpokesrc, QDP_all);
   QDP_r_eq_norm2_D(&bsq, in, QDP_all);
   printf0("QDP:   Chroma in norm2 = %g\n", bsq);
