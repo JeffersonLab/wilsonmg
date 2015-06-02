@@ -94,7 +94,7 @@ void MGP(reset_subspace)(int *latsize, void *subspace_in)
   double timer=0;
   int ndim=4;
   printf0("QDP: Resetting multigrid structure\n");
-  timer = QDP_time();
+  timer = -QDP_time();
   QOP_wilsonMgSetLinks(ret_val, wilf);
   // Set meta-global parameter
   // Set global multigrid parameters
