@@ -4,4 +4,4 @@ configure
 include/Makefile.in
 lib/Makefile.in
 autom4te.cache
-include/wilsonmg_config_internal.h.in~
+include/wilsonmg_config_internal.h.in*
